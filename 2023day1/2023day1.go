@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"unicode/utf8"
 )
 
-func file_to_string_table(filename string) []string {
+func File_to_string_table(filename string) []string {
 	//readfile
 	file, err := os.Open(filename)
 	if err != nil {
@@ -25,34 +24,23 @@ func file_to_string_table(filename string) []string {
 	return lines
 }
 
-func gets_digits(string_table []string) []float64 {
+func Gets_digits(string_table []string) []float64 {
 	var num_table []float64
 	for _, line := range string_table {
-		var i int = 0
-		_, char := utf8.DecodeRuneInString(line[i:])
-		var first_digit string = fmt.Sprint(char)
-		_, err_first := strconv.Atoi(first_digit)
-		if err_first != nil && i < len(line)-1 {
-			i += 1
-			_, char = utf8.DecodeRuneInString(line[i:])
-			first_digit = fmt.Sprint(char)
-			_, err_first = strconv.Atoi(first_digit)
+		runeSlice := []rune(line)
+		var first_digit string = ""
+		for i := 0; i < len(runeSlice); i++ {
+			_, err_first := strconv.Atoi(string(runeSlice[i]))
+			if err_first == nil && first_digit == "" { //meaning that i is the rank of an int
+				first_digit = string(runeSlice[i])
+			}
 		}
-		var j int = len(line) - 1
-		_, char = utf8.DecodeRuneInString(line[j:])
-		var last_digit string = fmt.Sprint(char)
-		_, err_last := strconv.Atoi(last_digit)
-		if err_last != nil && j > 0 {
-			j = j - 1
-			_, char = utf8.DecodeRuneInString(line[j:])
-			last_digit = fmt.Sprint(char)
-			_, err_last = strconv.Atoi(last_digit)
-		}
-		if j == 0 && err_last != nil {
-			j = i
-			_, char = utf8.DecodeRuneInString(line[j:])
-			last_digit = fmt.Sprint(char)
-			_, err_last = strconv.Atoi(last_digit)
+		var last_digit string = ""
+		for i := len(runeSlice) - 1; i >= 0; i-- {
+			_, err_last := strconv.Atoi(string(runeSlice[i]))
+			if err_last == nil && last_digit == "" { //meaning that i is the rank of an int
+				last_digit = string(runeSlice[i])
+			}
 		}
 		num, _ := strconv.ParseFloat(first_digit+last_digit, 64)
 		num_table = append(num_table, num)
@@ -60,7 +48,7 @@ func gets_digits(string_table []string) []float64 {
 	return num_table
 }
 
-func sum_of_cal_values(num_table []float64) float64 {
+func Sum_of_cal_values(num_table []float64) float64 {
 	var s float64 = 0
 	for _, num := range num_table {
 		s += num
@@ -69,7 +57,7 @@ func sum_of_cal_values(num_table []float64) float64 {
 }
 
 func main() {
-	int_table := file_to_string_table("input.txt")
-	num_table := gets_digits(int_table)
-	fmt.Println(sum_of_cal_values(num_table))
+	int_table := File_to_string_table("input.txt")
+	num_table := Gets_digits(int_table)
+	fmt.Println(Sum_of_cal_values(num_table))
 }
