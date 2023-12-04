@@ -24,6 +24,18 @@ func File_to_string_table(filename string) []string {
 	return lines
 }
 
+func Equal_slices(slice1 []float64, slice2 []float64) bool {
+	if len(slice1) != len(slice2) {
+		return false
+	}
+	for i, _ := range slice1 {
+		if slice1[i] != slice2[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func Gets_digits(string_table []string) []float64 {
 	var num_table []float64
 	for _, line := range string_table {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"testing"
 )
 
@@ -50,16 +49,7 @@ func TestGets_digits2(t *testing.T) {
 	input := []string{"1two", "3five4"}
 	output := Gets_digits2(input)
 	expected := []float64{12, 34}
-	var equal_tables bool = true
-	if len(output) != len(expected) {
-		equal_tables = false
-	}
-	for i, _ := range expected {
-		if math.Abs(output[i]-expected[i]) < 1e-10 {
-			equal_tables = false
-		}
-	}
-	if !equal_tables {
+	if !Equal_slices(expected, output) {
 		t.Errorf("for string table %v ; got %v", input, output)
 	}
 }
