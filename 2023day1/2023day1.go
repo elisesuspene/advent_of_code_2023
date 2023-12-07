@@ -86,15 +86,7 @@ func Converts_spelled_out_to_int(input string) string {
 	spelled_out_table := []string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 	num_table := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	for i, spelled_out := range spelled_out_table {
-		var equal bool = true
-		if len(spelled_out) == len(input) {
-			for j, _ := range spelled_out {
-				if spelled_out[j] != input[j] {
-					equal = false
-				}
-			}
-		}
-		if equal {
+		if spelled_out == input {
 			return fmt.Sprint(num_table[i])
 		}
 	}

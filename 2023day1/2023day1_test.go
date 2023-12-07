@@ -52,4 +52,10 @@ func TestGets_digits2(t *testing.T) {
 	if !Equal_slices(expected, output) {
 		t.Errorf("for string table %v ; got %v", input, output)
 	}
+	input = []string{"11two3", "4five"}
+	output = Gets_digits2(input)
+	expected = []float64{13, 45}
+	if !Equal_slices(expected, output) {
+		t.Errorf("for string table %v ; got %v", input, output)
+	}
 }
