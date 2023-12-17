@@ -4,18 +4,6 @@ import (
 	"testing"
 )
 
-func Equal_slices(slice1 []int, slice2 []int) bool {
-	if len(slice1) != len(slice2) {
-		return false
-	}
-	for i, _ := range slice1 {
-		if slice1[i] != slice2[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func TestUpdates_ver_reflections(t *testing.T) {
 	grid := [][]string{{"#", ".", "#", "#", ".", ".", "#", "#", "."}, {".", ".", "#", ".", "#", "#", ".", "#", "."}, {"#", "#", ".", ".", ".", ".", ".", ".", "#"}, {"#", "#", ".", ".", ".", ".", ".", ".", "#"}, {".", ".", "#", ".", "#", "#", ".", "#", "."}, {".", ".", "#", "#", ".", ".", "#", "#", "."}, {"#", ".", "#", ".", "#", "#", ".", "#", "."}}
 	var vertical []int
@@ -71,5 +59,32 @@ func TestCalculates_answer(t *testing.T) {
 	var expected int = 405
 	if result != expected {
 		t.Errorf("Calculates_answer gave %d instead of %d", result, expected)
+	}
+}
+
+func TestNew_reflections(t *testing.T) {
+	file_lines := []string{"#.##..##.", "..#.##.#.", "##......#", "##......#", "..#.##.#.", "..##..##.", "#.#.##.#.", "", "#...##..#", "#....#..#", "..##..###", "#####.##.", "#####.##.", "..##..###", "#....#..#"}
+	var patt_array []Pattern = Builds_patterns_from_file(file_lines)
+	patt_array[0].Updates_hor_reflections()
+	patt_array[0].Updates_ver_reflections()
+	patt_array[1].Updates_hor_reflections()
+	patt_array[1].Updates_ver_reflections()
+	horizontal0, vertical0 := patt_array[0].New_reflections()
+	horizontal1, vertical1 := patt_array[1].New_reflections()
+	exp_hor0 := []int{2}
+	var exp_ver0 []int
+	exp_hor1 := []int{0}
+	var exp_ver1 []int
+	if !Equal_slices(horizontal0, exp_hor0) {
+		t.Errorf("New_reflections for horizontals of the first pattern gave %v instead of %v", horizontal0, exp_hor0)
+	}
+	if !Equal_slices(vertical0, exp_ver0) {
+		t.Errorf("New_reflections for verticals of the first pattern gave %v instead of %v", vertical0, exp_ver0)
+	}
+	if !Equal_slices(horizontal1, exp_hor1) {
+		t.Errorf("New_reflections for horizontals of the second pattern gave %v instead of %v", horizontal1, exp_hor1)
+	}
+	if !Equal_slices(vertical1, exp_ver1) {
+		t.Errorf("New_reflections for verticals of the second pattern gave %v instead of %v", vertical1, exp_ver1)
 	}
 }
