@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 )
@@ -39,119 +40,188 @@ func Builds_matrix(lines []string) [][]int {
 	return output
 }
 
-type Step struct {
-	i            int
-	j            int // (i, j) is the indices of the new city block entered
-	line_dir     int // can be -1, 0 or 1
-	col_dir      int
-	n_dir        int //number of steps already taken in that direction
-	heat_loss    int
-	path_to_step [][]int
+type Task struct {
+	x           int
+	y           int
+	direction   int
+	consecutive int
 }
 
-func Puts_value_in_queue(value Step, queue []Step) []Step {
-	var i int = 0
-	var val_was_added bool = false
-	for i < len(queue)-1 {
-		if !val_was_added && queue[i].heat_loss <= value.heat_loss && queue[i+1].heat_loss > value.heat_loss {
-			var new_queue []Step
-			for j := 0; j <= i; j++ {
-				new_queue = append(new_queue, queue[j])
-			}
-			new_queue = append(new_queue, value)
-			for k := i + 1; k < len(queue); k++ {
-				new_queue = append(new_queue, queue[k])
-			}
-			queue = new_queue
-			val_was_added = true
-		}
-		i++
-	}
-	if !val_was_added {
-		if len(queue) == 1 && queue[len(queue)-1].heat_loss > value.heat_loss {
-			var new_queue []Step
-			var last Step = queue[len(queue)-1]
-			new_queue = append(new_queue, value)
-			new_queue = append(new_queue, last)
-			queue = new_queue
-		}
-		if len(queue) >= 1 && queue[len(queue)-1].heat_loss <= value.heat_loss {
-			queue = append(queue, value)
-		}
-		if len(queue) == 0 {
-			queue = append(queue, value)
-		}
-	}
-	return queue
+type Entry struct {
+	priority int
+	count    int
+	task     interface{}
 }
 
-func In_slice(val Step, slice []Step) bool {
-	var is_in bool = false
-	for _, step := range slice {
-		if step.i == val.i && step.j == val.j {
-			is_in = true
-		}
-	}
-	return is_in
+type Priority_queue struct {
+	heap         []Entry        //list of entries arranged in a heap
+	entry_finder map[Task]Entry //mapping of tasks to entries
+	//tasks = key ; []int = values
+	counter int
 }
 
-func Calculates_path(matrix [][]int) Step {
-	var visited []Step
-	var start_i int = 0
-	var start_j int = 0
-	var end_i int = len(matrix) - 1
-	var end_j int = len(matrix[0]) - 1
-	var queue []Step
-	//starting the path
-	poss1 := Step{start_i, start_j + 1, 0, 1, 1, matrix[start_i][start_j+1], [][]int{{start_i, start_j}, {start_i, start_j + 1}}}
-	poss2 := Step{start_i + 1, start_j, 1, 0, 1, matrix[start_i+1][start_j], [][]int{{start_i, start_j}, {start_i + 1, start_j}}}
-	queue = Puts_value_in_queue(poss1, queue)
-	queue = Puts_value_in_queue(poss2, queue)
-	var possible_ends []Step
-	//looping
-	for len(queue) != 0 {
-		var queue_top Step = queue[0]
-		queue = queue[1:]
-		if queue_top.i == end_i && queue_top.j == end_j {
-			possible_ends = Puts_value_in_queue(queue_top, possible_ends)
+const REMOVED = "<removed-task>" //placeholder for a removed task
+
+func (queue *Priority_queue) Siftup(pos int) {
+	for pos > 0 {
+		var parent_pos int = (pos - 1) / 2
+		if queue.heap[pos].priority > queue.heap[parent_pos].priority {
+			var old_heap_pos Entry = queue.heap[pos]
+			queue.heap[pos] = queue.heap[parent_pos]
+			queue.heap[parent_pos] = old_heap_pos
+			pos = parent_pos
 		}
-		if !In_slice(queue_top, visited) {
-			visited = append(visited, queue_top)
-			if queue_top.n_dir < 3 {
-				var new_i int = queue_top.i + queue_top.line_dir
-				var new_j int = queue_top.j + queue_top.col_dir
-				if new_i < len(matrix) && new_j < len(matrix[0]) && new_i >= 0 && new_j >= 0 {
-					coords := []int{new_i, new_j}
-					path_to_new := append(queue_top.path_to_step, coords)
-					new_step := Step{new_i, new_j, queue_top.line_dir, queue_top.col_dir, queue_top.n_dir + 1, matrix[new_i][new_j], path_to_new}
-					queue = Puts_value_in_queue(new_step, queue)
+		if queue.heap[pos].priority <= queue.heap[parent_pos].priority {
+			break
+		}
+	}
+}
+
+func (queue *Priority_queue) Heappush(entry Entry) {
+	queue.heap = append(queue.heap, entry)
+	queue.Siftup(len(queue.heap) - 1)
+}
+
+func (queue *Priority_queue) Add_task(task Task, priority int) {
+	if queue.entry_finder == nil {
+		entry_finder := make(map[Task]Entry)
+		queue.entry_finder = entry_finder
+	}
+	_, is_in := queue.entry_finder[task]
+	if is_in {
+		queue.Remove_task(task)
+	}
+	queue.counter += 1
+	var count int = queue.counter
+	entry := Entry{priority, count, task}
+	queue.entry_finder[task] = entry
+	queue.Heappush(entry)
+}
+
+func (queue *Priority_queue) Remove_task(task Task) {
+	entry := queue.entry_finder[task]
+	delete(queue.entry_finder, task)
+	entry.task = REMOVED
+}
+
+func (queue *Priority_queue) Siftdown(arg_pos int) {
+	var pos int = arg_pos
+	var endpos int = len(queue.heap)
+	var startpos int = pos
+	var newitem Entry = queue.heap[pos]
+	var childpos int = 2*pos + 1 //Left child position
+	for childpos < endpos {
+		var rightpos int = childpos + 1
+		if rightpos < endpos && queue.heap[childpos].priority >= queue.heap[rightpos].priority {
+			childpos = rightpos
+		}
+		queue.heap[pos] = queue.heap[childpos]
+		pos = childpos
+		childpos = 2*pos + 1
+	}
+	queue.heap[pos] = newitem
+	queue.Siftup1(startpos, pos)
+}
+
+func (queue *Priority_queue) Siftup1(startpos int, pos int) {
+	var newitem Entry = queue.heap[pos]
+	for pos > startpos {
+		var parentpos int = (pos - 1) >> 1 //Right shift to divide by 2
+		var parent Entry = queue.heap[parentpos]
+		if newitem.priority < parent.priority {
+			queue.heap[pos] = parent
+			pos = parentpos
+			continue
+		}
+		break
+	}
+	queue.heap[pos] = newitem
+}
+
+func (queue *Priority_queue) Heappop() Entry {
+	if len(queue.heap) == 0 {
+		fmt.Println("pop from an empty heap")
+		var empty_entry Entry
+		return empty_entry
+	}
+	var old_heap0 Entry = queue.heap[0]
+	//Swap the root (smallest element) with the last element
+	queue.heap[0] = queue.heap[len(queue.heap)-1]
+	queue.heap[len(queue.heap)-1] = old_heap0
+	//Pop the last element (which is now the smallest) and store it
+	var smallest Entry = queue.heap[len(queue.heap)-1]
+	queue.heap = queue.heap[:len(queue.heap)-1]
+	//Restore the heap property by pushing the swapped element down
+	queue.Siftdown(0)
+	return smallest
+}
+
+func (queue *Priority_queue) Pop_task() Task {
+	for len(queue.heap) != 0 {
+		var last_entry Entry = queue.Heappop()
+		if last_entry.task != REMOVED {
+			delete(queue.entry_finder, last_entry.task.(Task))
+			return last_entry.task.(Task)
+		}
+	}
+	fmt.Println("pop from an empty priority queue")
+	var empty_task Task
+	return empty_task
+}
+
+func Calculates_path(heat_map [][]int) int {
+	movement := [][]int{{0, -1}, {1, 0}, {0, 1}, {-1, 0}}
+	var queue Priority_queue
+	entry_finder := make(map[Task]Entry)
+	queue.entry_finder = entry_finder
+	for y, _ := range heat_map {
+		for x, _ := range heat_map[0] {
+			for direction := 0; direction < 4; direction++ {
+				for consecutive := 1; consecutive < 4; consecutive++ {
+					task := Task{x, y, direction, consecutive}
+					queue.Add_task(task, 1000000)
 				}
 			}
-			for new_line_dir := -1; new_line_dir < 2; new_line_dir++ {
-				for new_col_dir := -1; new_col_dir < 2; new_col_dir++ {
-					if new_line_dir-new_col_dir == -1 || new_line_dir-new_col_dir == 1 {
-						if (new_line_dir != queue_top.line_dir || new_col_dir != queue_top.col_dir) && (new_line_dir != -queue_top.line_dir || new_col_dir != -queue_top.col_dir) {
-							var new_i int = queue_top.i - new_line_dir
-							var new_j int = queue_top.j + new_col_dir
-							if new_i < len(matrix) && new_j < len(matrix[0]) && new_i >= 0 && new_j >= 0 {
-								coords := []int{new_i, new_j}
-								path_to_new := append(queue_top.path_to_step, coords)
-								new_step := Step{new_i, new_j, new_line_dir, new_col_dir, 1, queue_top.heat_loss + matrix[new_i][new_j], path_to_new}
-								queue = Puts_value_in_queue(new_step, queue)
-							}
-						}
-					}
+		}
+	}
+	new_task := Task{0, 0, 1, 0}
+	queue.Add_task(new_task, 0)
+	total_heat := make(map[Task]int)
+	total_heat[new_task] = 0
+	for {
+		t := queue.Pop_task()
+		_, is_in := total_heat[t]
+		if !is_in {
+			total_heat[t] = 1000000
+		}
+		if t.x == len(heat_map[0])-1 && t.y == len(heat_map)-1 {
+			return (total_heat[t])
+		}
+		neighbors := [][]int{{int(math.Abs(float64((t.direction + 1) % 4))), 1}, {int(math.Abs(float64((t.direction - 1) % 4))), 1}}
+		if t.consecutive < 3 {
+			forward_neighbor := []int{t.direction, t.consecutive + 1}
+			neighbors = append(neighbors, forward_neighbor)
+		}
+		for _, neighbor := range neighbors {
+			new_direction := neighbor[0]
+			new_consecutive := neighbor[1]
+			new_x := t.x + movement[new_direction][0]
+			new_y := t.y + movement[new_direction][1]
+			new_t := Task{new_x, new_y, new_direction, new_consecutive}
+			if 0 <= new_x && new_x < len(heat_map[0]) && 0 <= new_y && new_y < len(heat_map) {
+				new_heat := total_heat[t] + heat_map[new_y][new_x]
+				if new_heat < total_heat[new_t] {
+					total_heat[new_t] = new_heat
+					queue.Add_task(new_t, new_heat)
 				}
 			}
 		}
-
 	}
-	return possible_ends[0]
 }
 
 func main() {
 	var lines []string = File_to_string_table("input.txt")
-	var mat [][]int = Builds_matrix(lines)
-	var last_step Step = Calculates_path(mat)
-	fmt.Println(last_step.heat_loss)
+	var heat_map [][]int = Builds_matrix(lines)
+	var total_heat_loss int = Calculates_path(heat_map)
+	fmt.Println(total_heat_loss)
 }
