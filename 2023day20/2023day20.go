@@ -105,6 +105,7 @@ func Flip_flop(mod_list []Module, mod_index int, sent_pulses []Pulse, impending_
 			if mod_list[mod_index].status == "on" {
 				mod_list[mod_index].status = "off"
 				impending_pulses = append(impending_pulses, Pulse{mod_index, "low"})
+				return mod_list, sent_pulses, impending_pulses
 			}
 			if mod_list[mod_index].status == "off" {
 				mod_list[mod_index].status = "on"
@@ -182,10 +183,10 @@ func Calculates_answer(mod_list []Module) int {
 	var total_low int
 	for _, pulse := range total_sent_pulses {
 		if pulse.pulse_type == "high" {
-			total_high += 1
+			total_high += len(mod_list[pulse.sender].output)
 		}
 		if pulse.pulse_type == "low" {
-			total_low += 1
+			total_low += len(mod_list[pulse.sender].output)
 		}
 	}
 	return total_high * total_low

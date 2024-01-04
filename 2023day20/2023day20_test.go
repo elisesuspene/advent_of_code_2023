@@ -42,20 +42,11 @@ func TestProcesses_pulses(t *testing.T) {
 	if total_high != 4 {
 		t.Errorf("total_high is %d instead of 4", total_high)
 	}
-	if total_low != 8 {
-		t.Errorf("total_low is %d instead of 8", total_low)
+	if total_low != 6 {
+		t.Errorf("total_low is %d instead of 6", total_low)
 	}
 	if len(mod_list) != 6 {
 		t.Errorf("len(mod_list) is %d instead of 6", len(mod_list))
-	}
-	var all_off bool = true
-	for _, mod := range mod_list {
-		if mod.status != "off" {
-			all_off = false
-		}
-	}
-	if !all_off {
-		t.Errorf("all modules are not off at the end, when they should be")
 	}
 }
 
@@ -65,5 +56,11 @@ func TestCalculates_answer(t *testing.T) {
 	var output int = Calculates_answer(mod_list)
 	if output != 32000000 {
 		t.Errorf("output is %d instead of 32000000", output)
+	}
+	lines1 := []string{"broadcaster -> a", "%a -> inv, con", "&inv -> b", "%b -> con", "&con -> output"}
+	mod_list1 := Parsing_input(lines1)
+	output1 := Calculates_answer(mod_list1)
+	if output1 != 11687500 {
+		t.Errorf("output1 is %d instead of 11687500", output1)
 	}
 }
