@@ -2,8 +2,7 @@
 
 2023day10 to correct
 day17
+day18
 
 TO START : 
-day2
-day18
 day20
